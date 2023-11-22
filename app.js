@@ -25,6 +25,7 @@ const server = spdy.createServer({
 
 server.listen("9999", () => {
     console.log("Server listening on port 9999")
+    void tryRequests()
 })
 
 const http2Got = got.extend({
@@ -41,32 +42,34 @@ const http2Got = got.extend({
     }
 })
 
-const timeoutRequests = []
+const tryRequests = async () => {
+    const timeoutRequests = []
 
-for (let i = 0; i < 10000; i++) {
-    try {
-        timeoutRequests.push(http2Got.get("https://localhost:9999/timeout").text().catch(() => {}))
-    } catch (err) {
+    for (let i = 0; i < 10000; i++) {
+        try {
+            timeoutRequests.push(http2Got.get("https://localhost:9999/timeout").text().catch(() => {}))
+        } catch (err) {
+        }
     }
-}
 
-console.log("Waiting for timeout requests to finish...")
+    console.log("Waiting for timeout requests to finish...")
 
-await Promise.allSettled(timeoutRequests)
+    await Promise.allSettled(timeoutRequests)
 
-console.log("Finished! Attempting valid endpoint...")
+    console.log("Finished! Attempting valid endpoint...")
 
-const attempts = 1000
-let failedAttempts = 0
+    const attempts = 1000
+    let failedAttempts = 0
 
-for (let i = 0; i < attempts; i++) {
-    try {
-        const response = await http2Got.get("https://localhost:9999/working").text()
-        console.log(`i=${i} OK`)
-    } catch (err) {
-        console.log(`i=${i} FAIL`)
-        failedAttempts++
+    for (let i = 0; i < attempts; i++) {
+        try {
+            const response = await http2Got.get("https://localhost:9999/working").text()
+            console.log(`i=${i} OK`)
+        } catch (err) {
+            console.log(`i=${i} FAIL`)
+            failedAttempts++
+        }
     }
-}
 
-console.log(`Fail rate rate: ${failedAttempts/attempts} (${failedAttempts}/${attempts})`)
+    console.log(`Fail rate rate: ${failedAttempts/attempts} (${failedAttempts}/${attempts})`)
+}
